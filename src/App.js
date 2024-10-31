@@ -4,52 +4,53 @@ import './App.css';
 
 function App() {
   const [input, setInput] = useState('');
-  const [utcResult, setUtcResult] = useState('');
-  const [copyMessage, setCopyMessage] = useState('');
-  const [copyStatus, setCopyStatus] = useState(null); // Changed to null for clearer state management
+  const [inputArray, setInputArray] = useState([]); // Array to hold the input date-time combinations
+  const [utcResults, setUtcResults] = useState([]); // Array to hold the converted UTC results
 
-  const handleConvert = () => {
-    // Split the input by ', ' to get date and time separately
-    const [date, time] = input.split(', ').map(part => part.trim());
-
+  const handleAdd = () => {
     // Validate the input format
+    const [date, time] = input.split(', ').map(part => part.trim());
     if (!date || !time) {
-      setUtcResult('Please enter a valid date and time in the format YYYY-MM-DD, h:mm:ss AM/PM');
+      alert('Please enter a valid date and time in the format YYYY-MM-DD, h:mm:ss AM/PM');
       return;
     }
-
-    // Try to create a moment object
-    const colomboTime = moment.tz(`${date} ${time}`, 'YYYY-MM-DD h:mm:ss A', 'Asia/Colombo');
-
-    // Check if the moment object is valid
-    if (!colomboTime.isValid()) {
-      setUtcResult('Invalid date and time format. Please check your input.');
-      return;
-    }
-
-    // Convert to UTC
-    const utcTime = colomboTime.utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
     
-    setUtcResult(utcTime);
+    // Add the input to the input array
+    setInputArray(prev => [...prev, input.trim()]);
+    setInput(''); // Clear the input box after adding
+  };
+
+  const handleConvertAll = () => {
+    const newUtcResults = [];
+
+    inputArray.forEach(item => {
+      const [date, time] = item.split(', ').map(part => part.trim());
+      const colomboTime = moment.tz(`${date} ${time}`, 'YYYY-MM-DD h:mm:ss A', 'Asia/Colombo');
+
+      if (colomboTime.isValid()) {
+        // Convert to UTC and add to the results array
+        const utcTime = colomboTime.utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+        newUtcResults.push(utcTime);
+      } else {
+        alert(`Invalid date and time format for: ${item}`);
+      }
+    });
+
+    setUtcResults(newUtcResults); // Set the state with the new UTC results
   };
 
   const handleClear = () => {
     setInput('');
-    setUtcResult('');
-    setCopyMessage(''); // Clear the copy message as well
-    setCopyStatus(null); // Reset copy status
+    setInputArray([]); // Clear the input array
+    setUtcResults([]); // Clear the UTC results
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(utcResult).then(() => {
-      setCopyStatus(true); // success
-      setCopyMessage('Time converted to UTC & copied to clipboard!');
-      setTimeout(() => {
-        setCopyMessage('');
-      }, 1000);
+    const resultsToCopy = utcResults.join(', '); // Join results into a string
+    navigator.clipboard.writeText(resultsToCopy).then(() => {
+      alert('Converted UTC times copied to clipboard!');
     }).catch(err => {
-      setCopyStatus(false);
-      setCopyMessage('Failed to copy: ' + err);
+      alert('Failed to copy: ', err);
     });
   };
 
@@ -63,13 +64,33 @@ function App() {
         onChange={(e) => setInput(e.target.value)}
       />
       <br />
+      <button onClick={handleAdd}>Add</button>
+      <button onClick={handleConvertAll}>Convert All to UTC</button>
       <button onClick={handleClear}>Clear</button>
-      <button onClick={() => { handleConvert(); handleCopy(); }}>Convert to UTC & Copy</button>
-      <h3>UTC Date and Time:</h3>
-      <p>{utcResult}</p>
-      <div style={{ backgroundColor: copyStatus === true ? 'green' : copyStatus === false ? 'red' : 'transparent' }}>
-        {copyMessage && <p className="copy-message">{copyMessage}</p>} {/* Display the copy message */}
-      </div>
+      <button onClick={handleCopy} disabled={utcResults.length === 0}>Copy UTC Times</button>
+
+      <h3>Input Date and Time Combinations:</h3>
+      <p>{inputArray.length > 0 ? inputArray.join(', ') : 'No date and time added.'}</p>
+
+      <h3>Converted UTC Date and Times:</h3>
+      <table border={1}>
+        <thead>
+          <tr>
+            <th>UTC Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {utcResults.length > 0 ? utcResults.map((utcTime, index) => (
+            <tr key={index}>
+              <td>{utcTime}</td>
+            </tr>
+          )) : (
+            <tr>
+              <td>No results</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
