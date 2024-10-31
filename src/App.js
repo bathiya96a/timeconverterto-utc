@@ -3,21 +3,31 @@ import moment from 'moment-timezone';
 import './App.css';
 
 function App() {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(''); // For the list of date-time inputs
   const [inputArray, setInputArray] = useState([]); // Array to hold the input date-time combinations
   const [utcResults, setUtcResults] = useState([]); // Array to hold the converted UTC results
 
-  const handleAdd = () => {
-    // Validate the input format
-    const [date, time] = input.split(', ').map(part => part.trim());
-    if (!date || !time) {
-      alert('Please enter a valid date and time in the format YYYY-MM-DD, h:mm:ss AM/PM');
-      return;
+  const handleAddAll = () => {
+    // Split input by new lines and trim each entry
+    const newInputArray = input.split(/\n/).map(item => item.trim()).filter(Boolean);
+
+    // Validate and update input array
+    const validDateTimes = [];
+    newInputArray.forEach(item => {
+      const [date, time] = item.split(', ').map(part => part.trim());
+      if (date && time) {
+        validDateTimes.push(item); // Only add valid date-time combinations
+      } else {
+        alert(`Invalid date and time format for: ${item}`);
+      }
+    });
+
+    if (validDateTimes.length > 0) {
+      setInputArray(prev => [...prev, ...validDateTimes]); // Add valid entries to the input array
+      setInput(''); // Clear the input box after adding
+    } else {
+      alert('No valid date-time combinations found.');
     }
-    
-    // Add the input to the input array
-    setInputArray(prev => [...prev, input.trim()]);
-    setInput(''); // Clear the input box after adding
   };
 
   const handleConvertAll = () => {
@@ -57,21 +67,28 @@ function App() {
   return (
     <div className="App">
       <h2>Convert Date and Time from Asia/Colombo to UTC</h2>
-      <input
-        type="text"
-        placeholder="YYYY-MM-DD, h:mm:ss AM/PM"
+      
+      {/* Input area for the list of date-time combinations */}
+      <textarea
+        placeholder="Enter date and time combinations, each on a new line (e.g., YYYY-MM-DD, h:mm:ss AM/PM)"
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        rows={5}
+        cols={40}
       />
       <br />
-      <button onClick={handleAdd}>Add</button>
-      <button onClick={handleConvertAll}>Convert All to UTC</button>
-      <button onClick={handleClear}>Clear</button>
-      <button onClick={handleCopy} disabled={utcResults.length === 0}>Copy UTC Times</button>
+      <button onClick={handleAddAll}>Add All</button>
 
+      {/* Section to show all added date-time combinations */}
       <h3>Input Date and Time Combinations:</h3>
       <p>{inputArray.length > 0 ? inputArray.join(', ') : 'No date and time added.'}</p>
 
+      {/* Button to convert all input date-time combinations to UTC */}
+      <button onClick={handleConvertAll}>Convert All to UTC</button>
+      <button onClick={handleClear}>Clear All</button>
+      <button onClick={handleCopy} disabled={utcResults.length === 0}>Copy UTC Times</button>
+
+      {/* Section to show converted UTC times */}
       <h3>Converted UTC Date and Times:</h3>
       <table border={1}>
         <thead>
